@@ -2,6 +2,9 @@ package com.orient.tea.barragephoto.adapter;
 
 import android.content.Context;
 import android.support.annotation.LayoutRes;
+import android.support.annotation.Nullable;
+import android.util.AttributeSet;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,10 +12,13 @@ import android.view.ViewGroup;
 
 import com.orient.tea.barragephoto.R;
 import com.orient.tea.barragephoto.model.DataSource;
+import com.orient.tea.barragephoto.ui.IBarrageView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 
 /**
@@ -24,33 +30,27 @@ import java.util.Stack;
 @SuppressWarnings("unchecked")
 public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAdapter.BarrageViewHolder<T>>
         implements View.OnClickListener {
-    // View的缓存
-    private SparseArray<LinkedList<View>> mArray;
-    // 数据
-    private List<T> mDataList;
+
+    private static final String TAG = "BarrageAdapter";
+
     // View的点击监听
     private AdapterListener<T> mAdapterListener;
     // 类型List
-    private List<Integer> mTypeList;
+    private Set<Integer> mTypeList;
+    // 持有的barrageView
+    private IBarrageView barrageView;
+    private Context mContext;
 
-    public BarrageAdapter(List<T> dataList,AdapterListener<T> adapterListener) {
-        this.mArray = new SparseArray<>();
-        this.mDataList = dataList;
+
+    public BarrageAdapter(AdapterListener<T> adapterListener,Context context) {
         this.mAdapterListener = adapterListener;
-        this.mTypeList = new LinkedList<>();
+        this.mTypeList = new HashSet<>();
+        this.mContext = context;
     }
 
-    public BarrageAdapter() {
-        this(new LinkedList<T>(),null);
-    }
 
-    /**
-     * 设置适配器的监听器
-     *
-     * @param adapterListener 适配器的监听器
-     */
-    public void setAdapterListener(AdapterListener<T> adapterListener){
-        this.mAdapterListener = adapterListener;
+    public void setBarrageView(IBarrageView barrageView){
+        this.barrageView = barrageView;
     }
 
     // TODO 数据的增加处理
@@ -58,42 +58,37 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
     /**
      * 创建子视图的过程
      *
-     * @param position   位置
      * @param cacheView 缓存视图
      * @return 视图
      */
-    public View createSubView(int position, View cacheView, ViewGroup parent) {
+    public void createItemView(T data, View cacheView) {
         // 1.获取子布局
         // 2. 创建ViewHolder
         // 3. 绑定ViewHolder
         // 4. 返回视图
-        if (mDataList == null || mDataList.size() == 0) {
-            throw new RuntimeException("mDataList can't be null, you must sure that mDataList has been initialized");
-        }
-        T data = mDataList.get(position);
-        int layoutType = getItemLayout(data, position);
+        int layoutType = getItemLayout(data);
         VH holder = null;
         if (cacheView != null) {
             holder = (VH) cacheView.getTag(R.id.barrage_view_holder);
         }
         if (null == holder) {
-            holder = createViewHolder(parent, layoutType);
+            holder = createViewHolder(mContext, layoutType);
             mTypeList.add(data.getType());
         }
-        bindViewHolder(holder, position);
-        return holder.getItemView();
+        bindViewHolder(holder,data);
+        if(barrageView != null)
+            barrageView.addBarrageItem(holder.getItemView());
     }
 
     /**
      * 创建ViewHolder
      *
-     * @param parent 视图
      * @param type   布局类型
      * @return ViewHolder
      */
-    public VH createViewHolder(ViewGroup parent, int type) {
-        View root = LayoutInflater.from(parent.getContext()).inflate(type, parent, false);
-        VH holder = onCreateViewHolder(parent, type);
+    public VH createViewHolder(Context context, int type) {
+        View root = LayoutInflater.from(context).inflate(type,null);
+        VH holder = onCreateViewHolder(context, type);
 
         // 设置点击时间
         root.setTag(R.id.barrage_view_holder, root);
@@ -104,11 +99,10 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
     /**
      * 真正创建ViewHolder的方法
      *
-     * @param parent 父布局
      * @param type   类型
      * @return ViewHolder
      */
-    public abstract VH onCreateViewHolder(View parent, int type);
+    public abstract VH onCreateViewHolder(Context context, int type);
 
     /**
      * 得到布局的xml文件
@@ -116,80 +110,23 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
      * @return xml文件
      */
     public abstract @LayoutRes
-    int getItemLayout(T t, int position);
+    int getItemLayout(T t);
 
 
     /**
      * 绑定数据
      *
      * @param holder   BarrageViewHolder
-     * @param position 位置
+     * @param data T
      */
-    protected void bindViewHolder(VH holder, int position) {
-        T data = mDataList.get(position);
+    protected void bindViewHolder(VH holder, T data) {
         if (null == data)
             return;
         holder.bind(data);
     }
 
-    /**
-     * 添加进缓存
-     *
-     * @param root 缓存的View
-     */
-    public synchronized void addViewToCaches(int type,View root){
-        if (mArray.get(type) == null) {
-            LinkedList<View> linkedList = new LinkedList<>();
-            linkedList.add(root);
-            mArray.put(type, linkedList);
-        } else {
-            mArray.get(type).add(root);
-        }
-    }
-
-
-    /**
-     * 删除视图
-     *
-     * @return 类型
-     */
-    public synchronized View removeViewFromCaches(int type){
-        if(mArray.indexOfKey(type) >= 0){
-            return mArray.get(type).pop();
-        }else{
-            return null;
-        }
-    }
-
-    /**
-     * 缩小缓存长度，减少内存的使用
-     */
-    public synchronized void shrinkCacheSize(){
-        for (Integer type : mTypeList) {
-            if(mArray.indexOfKey(type) >= 0){
-                LinkedList<View> list = mArray.get(type);
-                int len = list.size();
-                while(list.size() > (len / 2.0 + 0.5)){
-                    list.pop();
-                }
-                mArray.put(type,list);
-            }
-        }
-    }
-
-    /**
-     * 获取内存View的数量
-     *
-     * @return 内存的大小
-     */
-    public int getCacheSize(){
-        int sum = 0;
-        for (Integer type : mTypeList) {
-            if(mArray.indexOfKey(type)>=0){
-                sum += mArray.get(type).size();
-            }
-        }
-        return sum;
+    public Set<Integer> getTypeList() {
+        return mTypeList;
     }
 
     @Override
@@ -203,14 +140,37 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
     }
 
     /**
-     * 得到单行的高度
+     * 添加一组数据
      *
-     * @return 返回高度
+     * @param data T
      */
-    public abstract int getSingleLineHeight();
+    public void add(T data){
+        if(barrageView == null)
+            throw new RuntimeException("please set barrageView,barrageView can't be null");
+        if(data == null){
+            Log.e(TAG,"data is null !");
+            return;
+        }
+        // get from cache
+        View cacheView = barrageView.getCacheView(data.getType());
+        createItemView(data,cacheView);
+    }
+
+    /**
+     * 添加一组数据
+     *
+     * @param dataList 一组数据
+     */
+    public void addList(List<T> dataList){
+        // TODO 数据太多的时候如何处理
+        // 考虑使用Handler
+        for (T t : dataList) {
+            add(t);
+        }
+    }
 
     public abstract static class BarrageViewHolder<T> {
-        protected T mData;
+        public T mData;
         private View itemView;
 
         public BarrageViewHolder(View itemView) {

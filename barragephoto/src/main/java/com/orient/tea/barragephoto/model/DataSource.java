@@ -7,10 +7,6 @@ package com.orient.tea.barragephoto.model;
  */
 
 public interface DataSource {
-    // 返回的内容
-    String getContent();
-    // 当前的速度
-    int getSpeed();
     // 返回当前的类型
     int getType();
     // 返回生成的时间
