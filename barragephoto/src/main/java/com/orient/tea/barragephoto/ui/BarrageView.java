@@ -3,8 +3,11 @@ package com.orient.tea.barragephoto.ui;
 import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.nfc.Tag;
+import android.os.Handler;
+import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseArray;
@@ -19,6 +22,7 @@ import com.orient.tea.barragephoto.adapter.BarrageAdapter;
 import com.orient.tea.barragephoto.listener.SimpleAnimationListener;
 import com.orient.tea.barragephoto.model.DataSource;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,13 +38,18 @@ import java.util.Set;
  */
 
 public class BarrageView extends ViewGroup implements IBarrageView {
-
     public static final String TAG = "BarrageView";
 
     // 设置默认的
     public final static int DURATION = 3000;
     // 设置延迟
-    public final static int DELAY = 1000;
+    public final static int DELAY = 2000;
+    // 设置最大的缓存View的数量 当达到200的时候回收View
+    public final static int MAX_COUNT = 200;
+    // 记录放入缓存的View
+    public volatile int count = 0;
+
+    private Handler mHandler;
 
     // 弹幕的相对位置
     public final static int GRAVITY_TOP = 1;
@@ -49,7 +58,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     public final static int GRAVITY_FULL = 7;
 
     // 当前的gravity
-    private int gravity = GRAVITY_TOP;
+    private int gravity = GRAVITY_FULL;
     // 行数
     private int barrageLines;
     // 宽度和高度
@@ -76,12 +85,30 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         this(context, attrs, 0);
     }
 
+    @SuppressLint("HandlerLeak")
     public BarrageView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
         this.barrageList = new ArrayList<>();
         this.mArray = new SparseArray<>();
-
+        mHandler = new Handler(){
+            @Override
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+                switch (msg.what){
+                    case 0:
+                        if(count<MAX_COUNT){
+                            // 思考一下200是否合适
+                            count++;
+                        }else {
+                            // 发动gc
+                            shrinkCacheSize();
+                            // 计算一下
+                            count = getCacheSize();
+                        }
+                }
+            }
+        };
     }
 
     /**
@@ -152,6 +179,8 @@ public class BarrageView extends ViewGroup implements IBarrageView {
      */
     public void setAdapter(BarrageAdapter adapter) {
         this.mAdapter = adapter;
+        // 相互绑定
+        mAdapter.setBarrageView(this);
     }
 
     @Override
@@ -171,6 +200,13 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         // TODO 暂时设置全屏
         // 根据需要可以设置高度
         //measureChildren(widthMeasureSpec,heightMeasureSpec);
+        if(singleLineHeight != -1){
+            barrageLines = height / singleLineHeight;
+            for(int i = 0;i<barrageLines;i++){
+                barrageList.add(i,null);
+            }
+        }
+
     }
 
     /**
@@ -178,7 +214,6 @@ public class BarrageView extends ViewGroup implements IBarrageView {
      */
     public void setSingleLineHeight(int singleLineHeight) {
         this.singleLineHeight = singleLineHeight;
-        barrageLines = height / singleLineHeight;
     }
 
     @Override
@@ -195,23 +230,29 @@ public class BarrageView extends ViewGroup implements IBarrageView {
             // 建议使用最小的Item的高度
             singleLineHeight = itemHeight;
             barrageLines = width / singleLineHeight;
+
+            for(int i = 0;i<barrageLines;i++){
+                barrageList.add(i,null);
+            }
         }
 
+        // TODO 设置防碰撞检测
         // 获取最佳的行数
         final int line = getBestLine(itemHeight);
 
         // 生成动画
         ValueAnimator valueAnimator = ValueAnimator.ofInt(width, -itemWidth);
-        int speed = random.nextInt(DELAY);
+         int speed = random.nextInt(DELAY);
         speed += 3000;
+        //int speed = 3000;
         valueAnimator.setDuration(speed);
-        valueAnimator.setStartDelay(0);
+        valueAnimator.setStartDelay(random.nextInt(DELAY));
         valueAnimator.setInterpolator(new LinearInterpolator());
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 int value = (int) animation.getAnimatedValue();
-                Log.e(TAG, "value:" + value);
+                //Log.e(TAG, "value:" + value);
                 view.layout(value, line * singleLineHeight, value + itemWidth, line * singleLineHeight + itemHeight);
             }
         });
@@ -227,10 +268,12 @@ public class BarrageView extends ViewGroup implements IBarrageView {
                 DataSource d = (DataSource) holder.mData;
                 int type = d.getType();
                 addViewToCaches(type,view);
-
+                // 通知内存添加缓存
+                mHandler.sendEmptyMessage(0);
             }
         });
         addView(view);
+        barrageList.add(line,view);
         valueAnimator.start();
     }
 
@@ -308,6 +351,11 @@ public class BarrageView extends ViewGroup implements IBarrageView {
                 }
         }
         return bestLine;
+    }
+
+    public void destroy(){
+        // 清除消息队列，防止内存泄漏
+        mHandler.removeCallbacksAndMessages(null);
     }
 
     @Override

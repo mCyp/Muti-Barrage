@@ -86,12 +86,12 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
      * @param type   布局类型
      * @return ViewHolder
      */
-    public VH createViewHolder(Context context, int type) {
+    private VH createViewHolder(Context context, int type) {
         View root = LayoutInflater.from(context).inflate(type,null);
-        VH holder = onCreateViewHolder(context, type);
+        VH holder = onCreateViewHolder(root, type);
 
         // 设置点击时间
-        root.setTag(R.id.barrage_view_holder, root);
+        root.setTag(R.id.barrage_view_holder, holder);
         root.setOnClickListener(this);
         return holder;
     }
@@ -102,7 +102,7 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
      * @param type   类型
      * @return ViewHolder
      */
-    public abstract VH onCreateViewHolder(Context context, int type);
+    protected abstract VH onCreateViewHolder(View root, int type);
 
     /**
      * 得到布局的xml文件
