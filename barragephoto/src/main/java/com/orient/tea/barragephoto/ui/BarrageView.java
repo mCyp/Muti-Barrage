@@ -1,7 +1,6 @@
 package com.orient.tea.barragephoto.ui;
 
 import android.animation.Animator;
-import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -13,16 +12,13 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
-import android.view.animation.Transformation;
 
 import com.orient.tea.barragephoto.R;
 import com.orient.tea.barragephoto.adapter.BarrageAdapter;
 import com.orient.tea.barragephoto.listener.SimpleAnimationListener;
 import com.orient.tea.barragephoto.model.DataSource;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,17 +33,30 @@ import java.util.Set;
  * Created by wangjie on 2019/3/7.
  */
 
+@SuppressWarnings({"unchecked", "FieldCanBeLocal", "unused", "MismatchedReadAndWriteOfArray"})
 public class BarrageView extends ViewGroup implements IBarrageView {
     public static final String TAG = "BarrageView";
 
+    // 防碰撞模式
+    public final static int MODEL_COLLISION_DETECTION = 1;
+    // 随机生成
+    public final static int MODEL_RANDOM = 2;
     // 设置默认的
-    public final static int DURATION = 3000;
-    // 设置延迟
-    public final static int DELAY = 2000;
+    public final static int DURATION = 4000;
+    // 设置滑动波动值
+    public final static int WAVE_VALUE = 2000;
     // 设置最大的缓存View的数量 当达到200的时候回收View
     public final static int MAX_COUNT = 200;
     // 记录放入缓存的View
     public volatile int count = 0;
+    // 发送间隔
+    public long interval;
+    // 模式
+    private int model = MODEL_RANDOM;
+    // 基础的一条弹幕滑动时间
+    private int duration = DURATION;
+    // 基础的上下波动的时间
+    private int waveValue = WAVE_VALUE;
 
     private Handler mHandler;
 
@@ -58,12 +67,14 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     public final static int GRAVITY_FULL = 7;
 
     // 当前的gravity
-    private int gravity = GRAVITY_FULL;
+    private int gravity = GRAVITY_TOP;
     // 行数
     private int barrageLines;
     // 宽度和高度
     private int width, height;
     private List<View> barrageList;
+    // 每一行的动画时间的数组
+    private int[] durationArray;
     // 速度设置
     // TODO 先暂时设置固定的速度 根据需要再修改
     private BarrageAdapter mAdapter;
@@ -91,16 +102,16 @@ public class BarrageView extends ViewGroup implements IBarrageView {
 
         this.barrageList = new ArrayList<>();
         this.mArray = new SparseArray<>();
-        mHandler = new Handler(){
+        mHandler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
                 super.handleMessage(msg);
-                switch (msg.what){
+                switch (msg.what) {
                     case 0:
-                        if(count<MAX_COUNT){
+                        if (count < MAX_COUNT) {
                             // 思考一下200是否合适
                             count++;
-                        }else {
+                        } else {
                             // 发动gc
                             shrinkCacheSize();
                             // 计算一下
@@ -133,7 +144,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
      */
     public synchronized View removeViewFromCaches(int type) {
         if (mArray.indexOfKey(type) >= 0) {
-            return mArray.get(type).pop();
+            return mArray.get(type).poll();
         } else {
             return null;
         }
@@ -183,6 +194,39 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         mAdapter.setBarrageView(this);
     }
 
+    /**
+     * 视图发送的间隔
+     *
+     * @param interval 间隔 单位毫秒
+     */
+    public void setInterval(long interval) {
+        this.interval = interval;
+    }
+
+    /**
+     * 设置间隔
+     *
+     * @param duration  弹幕滑行时间
+     * @param waveValue 波动时间
+     */
+    public void setDuration(int duration, int waveValue) {
+        if (duration < waveValue
+                || duration <= 0
+                || waveValue < 0)
+            throw new RuntimeException("duration or wavValue is not correct!");
+        this.duration = duration;
+        this.waveValue = waveValue;
+    }
+
+    /**
+     * 弹幕模式 默认随机速度模式
+     *
+     * @param model 模式类型
+     */
+    public void setModel(int model) {
+        this.model = model;
+    }
+
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
 
@@ -200,13 +244,25 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         // TODO 暂时设置全屏
         // 根据需要可以设置高度
         //measureChildren(widthMeasureSpec,heightMeasureSpec);
-        if(singleLineHeight != -1){
-            barrageLines = height / singleLineHeight;
-            for(int i = 0;i<barrageLines;i++){
-                barrageList.add(i,null);
-            }
-        }
+       /* if(singleLineHeight == -1){
 
+            initBarrageListAndSpeedArray();
+        }*/
+
+    }
+
+    /**
+     * 初始化一个空的弹幕列表和速度列表
+     */
+    private void initBarrageListAndSpeedArray() {
+        barrageLines = height / singleLineHeight;
+        for (int i = 0; i < barrageLines; i++) {
+            barrageList.add(i, null);
+        }
+        durationArray = new int[barrageLines];
+        for (int i = 0; i < barrageLines; i++) {
+            durationArray[i] = 0;
+        }
     }
 
     /**
@@ -229,24 +285,19 @@ public class BarrageView extends ViewGroup implements IBarrageView {
             // 如果没有设置高度 启用添加的第一个Item作为行数
             // 建议使用最小的Item的高度
             singleLineHeight = itemHeight;
-            barrageLines = width / singleLineHeight;
-
-            for(int i = 0;i<barrageLines;i++){
-                barrageList.add(i,null);
-            }
+            initBarrageListAndSpeedArray();
         }
 
         // TODO 设置防碰撞检测
         // 获取最佳的行数
         final int line = getBestLine(itemHeight);
 
+        // 计算速度
+
         // 生成动画
         ValueAnimator valueAnimator = ValueAnimator.ofInt(width, -itemWidth);
-         int speed = random.nextInt(DELAY);
-        speed += 3000;
-        //int speed = 3000;
-        valueAnimator.setDuration(speed);
-        valueAnimator.setStartDelay(random.nextInt(DELAY));
+        int duration = getDuration(line, itemWidth);
+        valueAnimator.setDuration(duration);
         valueAnimator.setInterpolator(new LinearInterpolator());
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -257,24 +308,60 @@ public class BarrageView extends ViewGroup implements IBarrageView {
             }
         });
         valueAnimator.addListener(new SimpleAnimationListener() {
+
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
 
-                // TODO 清空View 如何清空缓存
-                // 想要实现这个功能 必须保证防碰撞检测
                 BarrageView.this.removeView(view);
                 BarrageAdapter.BarrageViewHolder holder = (BarrageAdapter.BarrageViewHolder) view.getTag(R.id.barrage_view_holder);
                 DataSource d = (DataSource) holder.mData;
                 int type = d.getType();
-                addViewToCaches(type,view);
+                addViewToCaches(type, view);
                 // 通知内存添加缓存
                 mHandler.sendEmptyMessage(0);
             }
         });
         addView(view);
-        barrageList.add(line,view);
+        durationArray[line] = duration;
+        // 因为使用缓存View，必须重置位置
+        view.layout(width, line * singleLineHeight, width + itemWidth, line * singleLineHeight + itemHeight);
+        barrageList.set(line, view);
         valueAnimator.start();
+    }
+
+    /**
+     * 获取弹幕从屏幕开始到结束所花时间
+     *
+     * @return 弹幕时间
+     */
+    private int getDuration(int line, int itemWidth) {
+        if (model == MODEL_RANDOM) {
+            return duration - waveValue + random.nextInt(2 * waveValue);
+        } else {
+            int lastDuration = durationArray[line];
+            View view = barrageList.get(line);
+            int currDuration;
+            if (view == null) {
+                currDuration = duration - waveValue + random.nextInt(2 * waveValue);
+                Log.e(TAG, "View:null" + ",line:" + line + ",duration:" + currDuration);
+                // 如果当前为空 随机生成一个滑动时间
+                return currDuration;
+            }
+            int slideLength = (int) (width - view.getX());
+            if (itemWidth > slideLength) {
+                // 数据密集的时候跟上面的时间间隔相同
+                Log.e(TAG, "View:------" + ",line:" + line + ",duration:" + lastDuration);
+                return lastDuration;
+            }
+            // 得到上个View剩下的滑动时间
+            int lastLeavedSlidingTime = (int) ((view.getX() + itemWidth) / (width * 1.0f) * lastDuration);
+            //Log.e(TAG,"lastLeavedSlidingTime:"+lastLeavedSlidingTime+",lastLeavedSlidingTime:"+);
+            lastLeavedSlidingTime = Math.max(lastLeavedSlidingTime, duration - waveValue);
+            currDuration = lastLeavedSlidingTime + random.nextInt(duration + waveValue - lastLeavedSlidingTime);
+            Log.e(TAG, "view:" + view.getX() + ",lastLeavedSlidingTime:" + lastLeavedSlidingTime + ",line:" + line + ",duration:" + currDuration);
+            return currDuration;
+        }
     }
 
     /**
@@ -295,7 +382,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     }
 
     /**
-     * TODO 设置防碰撞检测
+     * 真实获取最佳的行数
      *
      * @param v 当前View的高度/单行的标准高度
      * @return 最佳行数
@@ -353,14 +440,20 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         return bestLine;
     }
 
-    public void destroy(){
+    public void destroy() {
         // 清除消息队列，防止内存泄漏
         mHandler.removeCallbacksAndMessages(null);
+        mAdapter.destroy();
     }
 
     @Override
     public View getCacheView(int type) {
         return removeViewFromCaches(type);
+    }
+
+    @Override
+    public long getInterval() {
+        return interval;
     }
 
 }

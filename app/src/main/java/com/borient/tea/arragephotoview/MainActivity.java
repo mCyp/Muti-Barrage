@@ -20,7 +20,7 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
-    private String SEED[] = {"桃树、杏树、梨树，你不让我", "，都开满了花赶趟儿。红的像火，", "花里带着甜味儿，闭了眼，树上", "满是桃儿、杏儿、梨儿!花下成", "嗡地闹着，大小的蝴蝶"};
+    private String SEED[] = {"桃树", "，都开满了花赶趟儿。红的像火，", "花里带着甜味儿，闭了眼，树上", "满是桃儿、", "嗡地闹着，大小的蝴蝶"};
     private Random random = new Random();
     private final int ICON_RESOURCES[] = {R.drawable.icon1, R.drawable.icon2, R.drawable.icon3, R.drawable.icon4, R.drawable.icon5};
 
@@ -36,6 +36,8 @@ public class MainActivity extends AppCompatActivity {
 
         mAdd = findViewById(R.id.btn_add);
         barrageView = findViewById(R.id.barrage);
+        barrageView.setInterval(20);
+        barrageView.setModel(BarrageView.MODEL_COLLISION_DETECTION);
         barrageView.setAdapter(mAdapter = new BarrageAdapter<BarrageData, ViewHolder>(null,this) {
             @Override
             public ViewHolder onCreateViewHolder(View root, int type) {

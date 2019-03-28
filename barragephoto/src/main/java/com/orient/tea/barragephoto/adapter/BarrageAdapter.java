@@ -1,6 +1,9 @@
 package com.orient.tea.barragephoto.adapter;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
@@ -20,6 +23,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 基础的适配器
@@ -31,6 +36,7 @@ import java.util.Stack;
 public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAdapter.BarrageViewHolder<T>>
         implements View.OnClickListener {
 
+    private static final int MSG_CREATE_VIEW = 1;
     private static final String TAG = "BarrageAdapter";
 
     // View的点击监听
@@ -39,18 +45,48 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
     private Set<Integer> mTypeList;
     // 持有的barrageView
     private IBarrageView barrageView;
+    // 当前的数据
+    private LinkedList<T> mDataList;
     private Context mContext;
+    // 默认的间隔
+    private long interval;
+
+    // 单线程的消息对立
+    private ExecutorService mService = Executors.newSingleThreadExecutor();
+    // 主线程的Handler
+    private Handler mHandler = new Handler(Looper.getMainLooper()){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+
+            switch (msg.what){
+                case MSG_CREATE_VIEW:{
+                    T data = mDataList.remove();
+                    if(data == null)
+                        break;
+                    if(barrageView == null)
+                        throw new RuntimeException("please set barrageView,barrageView can't be null");
+                    // get from cache
+                    View cacheView = barrageView.getCacheView(data.getType());
+                    createItemView(data,cacheView);
+                }
+            }
+
+        }
+    };
 
 
     public BarrageAdapter(AdapterListener<T> adapterListener,Context context) {
         this.mAdapterListener = adapterListener;
         this.mTypeList = new HashSet<>();
         this.mContext = context;
+        this.mDataList = new LinkedList<>();
     }
 
 
     public void setBarrageView(IBarrageView barrageView){
         this.barrageView = barrageView;
+        this.interval = barrageView.getInterval();
     }
 
     // TODO 数据的增加处理
@@ -145,15 +181,10 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
      * @param data T
      */
     public void add(T data){
-        if(barrageView == null)
-            throw new RuntimeException("please set barrageView,barrageView can't be null");
-        if(data == null){
-            Log.e(TAG,"data is null !");
+        if(data == null)
             return;
-        }
-        // get from cache
-        View cacheView = barrageView.getCacheView(data.getType());
-        createItemView(data,cacheView);
+        mDataList.add(data);
+        mService.submit(new DelayRunnable(1));
     }
 
     /**
@@ -162,11 +193,17 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
      * @param dataList 一组数据
      */
     public void addList(List<T> dataList){
-        // TODO 数据太多的时候如何处理
-        // 考虑使用Handler
-        for (T t : dataList) {
-            add(t);
-        }
+        if(dataList == null || dataList.size() ==0)
+            return;
+        int len = dataList.size();
+        mDataList.addAll(dataList);
+        mService.submit(new DelayRunnable(len));
+    }
+
+    public void destroy(){
+        mService.shutdownNow();
+        mHandler.removeCallbacksAndMessages(null);
+        barrageView = null;
     }
 
     public abstract static class BarrageViewHolder<T> {
@@ -187,5 +224,29 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
         }
 
         protected abstract void onBind(T data);
+    }
+
+    /**
+     * 延迟的Runnable
+     */
+    public class DelayRunnable implements Runnable{
+
+        private int len;
+
+        public DelayRunnable(int len) {
+            this.len = len;
+        }
+
+        @Override
+        public void run() {
+            for(int i = 0;i<len;i++){
+                mHandler.sendEmptyMessage(MSG_CREATE_VIEW);
+                try {
+                    Thread.sleep(interval*20);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }
