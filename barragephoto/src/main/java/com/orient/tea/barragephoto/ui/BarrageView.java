@@ -10,6 +10,7 @@ import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.LinearInterpolator;
@@ -19,6 +20,7 @@ import com.orient.tea.barragephoto.adapter.BarrageAdapter;
 import com.orient.tea.barragephoto.listener.SimpleAnimationListener;
 import com.orient.tea.barragephoto.model.DataSource;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,13 +30,17 @@ import java.util.Set;
 /**
  * 弹幕视图
  * 使用属性动画实现监听事件
- * TODO 使用替换缓存的方式可能存在问题 到时候检测一下
  * <p>
  * Created by wangjie on 2019/3/7.
  */
 
 @SuppressWarnings({"unchecked", "FieldCanBeLocal", "unused", "MismatchedReadAndWriteOfArray"})
 public class BarrageView extends ViewGroup implements IBarrageView {
+    // TODO
+    // 1. 多类型下的碰撞检测
+    // 2. 测试
+    // 3. 具体行数的设置
+    // 4. 具体的高度设置和位置设置
     public static final String TAG = "BarrageView";
 
     // 防碰撞模式
@@ -58,7 +64,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     // 基础的上下波动的时间
     private int waveValue = WAVE_VALUE;
 
-    private Handler mHandler;
+    private BarrageHandler mHandler;
 
     // 弹幕的相对位置
     public final static int GRAVITY_TOP = 1;
@@ -76,11 +82,11 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     // 每一行的动画时间的数组
     private int[] durationArray;
     // 速度设置
-    // TODO 先暂时设置固定的速度 根据需要再修改
     private BarrageAdapter mAdapter;
     // 单行的高度
     // TODO 利用UI工具使用当前高度的1/8
     private int singleLineHeight = -1;
+    private boolean isInterceptTouchEvent = false;
 
     // View的缓存
     private SparseArray<LinkedList<View>> mArray;
@@ -102,24 +108,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
 
         this.barrageList = new ArrayList<>();
         this.mArray = new SparseArray<>();
-        mHandler = new Handler() {
-            @Override
-            public void handleMessage(Message msg) {
-                super.handleMessage(msg);
-                switch (msg.what) {
-                    case 0:
-                        if (count < MAX_COUNT) {
-                            // 思考一下200是否合适
-                            count++;
-                        } else {
-                            // 发动gc
-                            shrinkCacheSize();
-                            // 计算一下
-                            count = getCacheSize();
-                        }
-                }
-            }
-        };
+        mHandler = new BarrageHandler(this);
     }
 
     /**
@@ -227,9 +216,23 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         this.model = model;
     }
 
+    /**
+     * 设置是否阻止事件的下发
+     */
+    public void setInterceptTouchEvent(boolean isInterceptTouchEvent){
+        this.isInterceptTouchEvent = isInterceptTouchEvent;
+    }
+
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
 
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if(isInterceptTouchEvent)
+            return true;
+        return super.onInterceptTouchEvent(ev);
     }
 
     @Override
@@ -241,13 +244,10 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         this.width = width;
         this.height = height;
 
-        // TODO 暂时设置全屏
-        // 根据需要可以设置高度
-        //measureChildren(widthMeasureSpec,heightMeasureSpec);
-       /* if(singleLineHeight == -1){
+        /*measureChildren(widthMeasureSpec,heightMeasureSpec);
+        setMeasuredDimension();*/
 
-            initBarrageListAndSpeedArray();
-        }*/
+
 
     }
 
@@ -287,8 +287,6 @@ public class BarrageView extends ViewGroup implements IBarrageView {
             singleLineHeight = itemHeight;
             initBarrageListAndSpeedArray();
         }
-
-        // TODO 设置防碰撞检测
         // 获取最佳的行数
         final int line = getBestLine(itemHeight);
 
@@ -454,6 +452,31 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     @Override
     public long getInterval() {
         return interval;
+    }
+
+    private static class BarrageHandler extends Handler{
+        private WeakReference<BarrageView> barrageViewReference;
+
+        BarrageHandler(BarrageView barrageView) {
+            this.barrageViewReference = new WeakReference<BarrageView>(barrageView);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case 0:
+                    if (barrageViewReference.get().count < MAX_COUNT) {
+                        // 思考一下200是否合适
+                        barrageViewReference.get().count++;
+                    } else {
+                        // 发动gc
+                        barrageViewReference.get().shrinkCacheSize();
+                        // 计算一下
+                        barrageViewReference.get().count = barrageViewReference.get().getCacheSize();
+                    }
+            }
+        }
     }
 
 }

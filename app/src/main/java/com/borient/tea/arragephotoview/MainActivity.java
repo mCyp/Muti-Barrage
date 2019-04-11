@@ -8,9 +8,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.borient.tea.arragephotoview.data.BarrageData;
 import com.bumptech.glide.Glide;
+import com.orient.tea.barragephoto.adapter.AdapterListener;
 import com.orient.tea.barragephoto.adapter.BarrageAdapter;
 import com.orient.tea.barragephoto.ui.BarrageView;
 
@@ -25,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
     private final int ICON_RESOURCES[] = {R.drawable.icon1, R.drawable.icon2, R.drawable.icon3, R.drawable.icon4, R.drawable.icon5};
 
     private BarrageView barrageView;
-    private BarrageAdapter<BarrageData,ViewHolder> mAdapter;
+    private BarrageAdapter<BarrageData, ViewHolder> mAdapter;
     private Button mAdd;
     private List<BarrageData> barrageDataList = new ArrayList<>();
 
@@ -37,8 +39,11 @@ public class MainActivity extends AppCompatActivity {
         mAdd = findViewById(R.id.btn_add);
         barrageView = findViewById(R.id.barrage);
         barrageView.setInterval(20);
+        barrageView.setDuration(10000, 2000);
         barrageView.setModel(BarrageView.MODEL_COLLISION_DETECTION);
-        barrageView.setAdapter(mAdapter = new BarrageAdapter<BarrageData, ViewHolder>(null,this) {
+        barrageView.setInterceptTouchEvent(true
+        );
+        barrageView.setAdapter(mAdapter = new BarrageAdapter<BarrageData, ViewHolder>(null, this) {
             @Override
             public ViewHolder onCreateViewHolder(View root, int type) {
                 return new ViewHolder(root);
@@ -46,7 +51,18 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public int getItemLayout(BarrageData barrageData) {
-                return R.layout.item_barrage;
+                switch (barrageData.getType()) {
+                    case 0:
+                        return R.layout.item_barrage;
+                    default:
+                        return R.layout.item_barrage_bigger;
+                }
+            }
+        });
+        mAdapter.setAdapterListener(new AdapterListener<BarrageData>() {
+            @Override
+            public void onItemClick(BarrageAdapter.BarrageViewHolder<BarrageData> holder, BarrageData item) {
+                Toast.makeText(MainActivity.this,item.getContent()+"点击了一次",Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -60,10 +76,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void initData(){
+    private void initData() {
         int strLength = SEED.length;
-        for(int i = 0;i<50;i++){
-            mAdapter.add(new BarrageData(SEED[random.nextInt(strLength-1)],1));
+        for (int i = 0; i < 50; i++) {
+            mAdapter.add(new BarrageData(SEED[random.nextInt(strLength - 1)], random.nextInt(2)));
         }
     }
 
@@ -74,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
         barrageView.destroy();
     }
 
-    class ViewHolder extends BarrageAdapter.BarrageViewHolder<BarrageData>{
+    class ViewHolder extends BarrageAdapter.BarrageViewHolder<BarrageData> {
 
         private ImageView mHeadView;
         private TextView mContent;

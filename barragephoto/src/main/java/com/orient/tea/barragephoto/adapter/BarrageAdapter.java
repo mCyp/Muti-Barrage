@@ -17,6 +17,7 @@ import com.orient.tea.barragephoto.R;
 import com.orient.tea.barragephoto.model.DataSource;
 import com.orient.tea.barragephoto.ui.IBarrageView;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -54,7 +55,8 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
     // 单线程的消息对立
     private ExecutorService mService = Executors.newSingleThreadExecutor();
     // 主线程的Handler
-    private Handler mHandler = new Handler(Looper.getMainLooper()){
+    private BarrageAdapterHandler<T> mHandler = new BarrageAdapterHandler<>(Looper.getMainLooper(),this);
+    /*private Handler mHandler = new Handler(Looper.getMainLooper()){
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
@@ -73,7 +75,7 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
             }
 
         }
-    };
+    };*/
 
 
     public BarrageAdapter(AdapterListener<T> adapterListener,Context context) {
@@ -81,6 +83,10 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
         this.mTypeList = new HashSet<>();
         this.mContext = context;
         this.mDataList = new LinkedList<>();
+    }
+
+    public void setAdapterListener(AdapterListener<T> adapterListener){
+        this.mAdapterListener = adapterListener;
     }
 
 
@@ -248,5 +254,34 @@ public abstract class BarrageAdapter<T extends DataSource, VH extends BarrageAda
                 }
             }
         }
+    }
+
+    public static class BarrageAdapterHandler<T extends DataSource> extends Handler{
+        private WeakReference<BarrageAdapter> adapterReference;
+
+        public BarrageAdapterHandler(Looper looper,BarrageAdapter adapter) {
+            super(looper);
+            adapterReference = new WeakReference<BarrageAdapter>(adapter);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+
+            switch (msg.what){
+                case MSG_CREATE_VIEW:{
+                    T data = (T)adapterReference.get().mDataList.remove();
+                    if(data == null)
+                        break;
+                    if(adapterReference.get().barrageView == null)
+                        throw new RuntimeException("please set barrageView,barrageView can't be null");
+                    // get from cache
+                    View cacheView = adapterReference.get().barrageView.getCacheView(data.getType());
+                    adapterReference.get().createItemView(data,cacheView);
+                }
+            }
+
+        }
+
     }
 }
