@@ -10,15 +10,22 @@ import com.orient.tea.barragephoto.model.DataSource;
 
 public class BarrageData implements DataSource {
 
-    public static final int BARRAGE_TEXT = 1;
-    public static final int BARRAGE_IMAGE_TEXT = 2;
-
     private String content;
     private int type;
+    private int pos;
 
-    public BarrageData(String content, int type) {
+    public BarrageData(String content, int type, int pos) {
         this.content = content;
         this.type = type;
+        this.pos = pos;
+    }
+
+    public int getPos() {
+        return pos;
+    }
+
+    public void setPos(int pos) {
+        this.pos = pos;
     }
 
     public String getContent() {

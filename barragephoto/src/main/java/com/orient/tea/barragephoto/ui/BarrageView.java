@@ -4,7 +4,6 @@ import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.nfc.Tag;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
@@ -19,6 +18,7 @@ import com.orient.tea.barragephoto.R;
 import com.orient.tea.barragephoto.adapter.BarrageAdapter;
 import com.orient.tea.barragephoto.listener.SimpleAnimationListener;
 import com.orient.tea.barragephoto.model.DataSource;
+import com.orient.tea.barragephoto.utils.DeviceUtils;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -43,14 +43,16 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     // 4. 具体的高度设置和位置设置
     public static final String TAG = "BarrageView";
 
-    // 防碰撞模式
+    // 1 碰撞检测模式 2 随机生成模式
     public final static int MODEL_COLLISION_DETECTION = 1;
-    // 随机生成
     public final static int MODEL_RANDOM = 2;
-    // 设置默认的
-    public final static int DURATION = 4000;
-    // 设置滑动波动值
-    public final static int WAVE_VALUE = 2000;
+    // 弹幕的相对位置
+    public final static int GRAVITY_TOP = 1;
+    public final static int GRAVITY_MIDDLE = 2;
+    public final static int GRAVITY_BOTTOM = 4;
+    public final static int GRAVITY_FULL = 7;
+
+
     // 设置最大的缓存View的数量 当达到200的时候回收View
     public final static int MAX_COUNT = 200;
     // 记录放入缓存的View
@@ -59,18 +61,18 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     public long interval;
     // 模式
     private int model = MODEL_RANDOM;
+
+    // 新增速度 px/100ms
+    private int speed = 20;
+    private int speedWaveValue = 3;
+
+
     // 基础的一条弹幕滑动时间
-    private int duration = DURATION;
+    //private int duration = DURATION;
     // 基础的上下波动的时间
-    private int waveValue = WAVE_VALUE;
+    //private int waveValue = WAVE_VALUE;
 
     private BarrageHandler mHandler;
-
-    // 弹幕的相对位置
-    public final static int GRAVITY_TOP = 1;
-    public final static int GRAVITY_MIDDLE = 2;
-    public final static int GRAVITY_BOTTOM = 4;
-    public final static int GRAVITY_FULL = 7;
 
     // 当前的gravity
     private int gravity = GRAVITY_TOP;
@@ -80,13 +82,14 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     private int width, height;
     private List<View> barrageList;
     // 每一行的动画时间的数组
-    private int[] durationArray;
+    private int[] speedArray;
     // 速度设置
     private BarrageAdapter mAdapter;
     // 单行的高度
-    // TODO 利用UI工具使用当前高度的1/8
     private int singleLineHeight = -1;
     private boolean isInterceptTouchEvent = false;
+    // 上下弹幕之间的距离
+    private int barrageDistance;
 
     // View的缓存
     private SparseArray<LinkedList<View>> mArray;
@@ -184,6 +187,15 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     }
 
     /**
+     * 布局位置
+     *
+     * @param gravity 布局位置
+     */
+    public void setGravity(int gravity){
+        this.gravity = gravity;
+    }
+
+    /**
      * 视图发送的间隔
      *
      * @param interval 间隔 单位毫秒
@@ -195,16 +207,16 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     /**
      * 设置间隔
      *
-     * @param duration  弹幕滑行时间
-     * @param waveValue 波动时间
+     * @param speed     弹幕滑动的基础速度
+     * @param waveValue 滑动素的波动值
      */
-    public void setDuration(int duration, int waveValue) {
-        if (duration < waveValue
-                || duration <= 0
+    public void setSpeed(int speed, int waveValue) {
+        if (speed < waveValue
+                || speed <= 0
                 || waveValue < 0)
             throw new RuntimeException("duration or wavValue is not correct!");
-        this.duration = duration;
-        this.waveValue = waveValue;
+        this.speed = speed;
+        this.speedWaveValue = waveValue;
     }
 
     /**
@@ -219,7 +231,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     /**
      * 设置是否阻止事件的下发
      */
-    public void setInterceptTouchEvent(boolean isInterceptTouchEvent){
+    public void setInterceptTouchEvent(boolean isInterceptTouchEvent) {
         this.isInterceptTouchEvent = isInterceptTouchEvent;
     }
 
@@ -230,7 +242,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        if(isInterceptTouchEvent)
+        if (isInterceptTouchEvent)
             return true;
         return super.onInterceptTouchEvent(ev);
     }
@@ -244,9 +256,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         this.width = width;
         this.height = height;
 
-        /*measureChildren(widthMeasureSpec,heightMeasureSpec);
-        setMeasuredDimension();*/
-
+        measureChildren(widthMeasureSpec, heightMeasureSpec);
 
 
     }
@@ -255,14 +265,18 @@ public class BarrageView extends ViewGroup implements IBarrageView {
      * 初始化一个空的弹幕列表和速度列表
      */
     private void initBarrageListAndSpeedArray() {
-        barrageLines = height / singleLineHeight;
+        barrageDistance = DeviceUtils.dp2px(getContext(), 12);
+        barrageLines = height / (singleLineHeight + barrageDistance);
         for (int i = 0; i < barrageLines; i++) {
             barrageList.add(i, null);
         }
-        durationArray = new int[barrageLines];
+        speedArray = new int[barrageLines];
         for (int i = 0; i < barrageLines; i++) {
-            durationArray[i] = 0;
+            speedArray[i] = 0;
         }
+
+        // 设置合理的发送间隔
+
     }
 
     /**
@@ -281,6 +295,9 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         final int itemWidth = view.getMeasuredWidth();
         final int itemHeight = view.getMeasuredHeight();
 
+        //Log.i(TAG,"width:"+itemWidth);
+
+
         if (singleLineHeight == -1) {
             // 如果没有设置高度 启用添加的第一个Item作为行数
             // 建议使用最小的Item的高度
@@ -294,7 +311,10 @@ public class BarrageView extends ViewGroup implements IBarrageView {
 
         // 生成动画
         ValueAnimator valueAnimator = ValueAnimator.ofInt(width, -itemWidth);
-        int duration = getDuration(line, itemWidth);
+        int curSpeed = getSpeed(line, itemWidth);
+
+        long duration = (int)((float)(width+itemWidth)/(float)curSpeed+1) * 1000;
+        Log.i(TAG,"duration:"+duration);
         valueAnimator.setDuration(duration);
         valueAnimator.setInterpolator(new LinearInterpolator());
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -302,7 +322,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
             public void onAnimationUpdate(ValueAnimator animation) {
                 int value = (int) animation.getAnimatedValue();
                 //Log.e(TAG, "value:" + value);
-                view.layout(value, line * singleLineHeight, value + itemWidth, line * singleLineHeight + itemHeight);
+                view.layout(value, line * (singleLineHeight + barrageDistance) + barrageDistance / 2, value + itemWidth, line * (singleLineHeight + barrageDistance) + barrageDistance / 2 + itemHeight);
             }
         });
         valueAnimator.addListener(new SimpleAnimationListener() {
@@ -321,9 +341,9 @@ public class BarrageView extends ViewGroup implements IBarrageView {
             }
         });
         addView(view);
-        durationArray[line] = duration;
+        speedArray[line] = curSpeed;
         // 因为使用缓存View，必须重置位置
-        view.layout(width, line * singleLineHeight, width + itemWidth, line * singleLineHeight + itemHeight);
+        view.layout(width, line * (singleLineHeight + barrageDistance) + barrageDistance / 2, width + itemWidth, line * (singleLineHeight + barrageDistance) + barrageDistance / 2 + itemHeight);
         barrageList.set(line, view);
         valueAnimator.start();
     }
@@ -333,32 +353,36 @@ public class BarrageView extends ViewGroup implements IBarrageView {
      *
      * @return 弹幕时间
      */
-    private int getDuration(int line, int itemWidth) {
+    private int getSpeed(int line, int itemWidth) {
         if (model == MODEL_RANDOM) {
-            return duration - waveValue + random.nextInt(2 * waveValue);
+            return speed - speedWaveValue + random.nextInt(2 * speedWaveValue);
         } else {
-            int lastDuration = durationArray[line];
+            int lastSpeed = speedArray[line];
             View view = barrageList.get(line);
-            int currDuration;
+            int curSpeed;
             if (view == null) {
-                currDuration = duration - waveValue + random.nextInt(2 * waveValue);
-                Log.e(TAG, "View:null" + ",line:" + line + ",duration:" + currDuration);
+                curSpeed = speed - speedWaveValue + random.nextInt(2 * speedWaveValue);
+                Log.e(TAG, "View:null" + ",line:" + line + ",speed:" + curSpeed);
                 // 如果当前为空 随机生成一个滑动时间
-                return currDuration;
+                return curSpeed;
             }
             int slideLength = (int) (width - view.getX());
-            if (itemWidth > slideLength) {
+            if (view.getWidth() > slideLength) {
                 // 数据密集的时候跟上面的时间间隔相同
-                Log.e(TAG, "View:------" + ",line:" + line + ",duration:" + lastDuration);
-                return lastDuration;
+                Log.e(TAG, "View:------" + ",line:" + line + ",speed:" + lastSpeed);
+                return lastSpeed;
             }
             // 得到上个View剩下的滑动时间
-            int lastLeavedSlidingTime = (int) ((view.getX() + itemWidth) / (width * 1.0f) * lastDuration);
+            int lastLeavedSlidingTime = (int) ((float) (view.getX() + view.getWidth() ) / (float) lastSpeed)+1;
             //Log.e(TAG,"lastLeavedSlidingTime:"+lastLeavedSlidingTime+",lastLeavedSlidingTime:"+);
-            lastLeavedSlidingTime = Math.max(lastLeavedSlidingTime, duration - waveValue);
-            currDuration = lastLeavedSlidingTime + random.nextInt(duration + waveValue - lastLeavedSlidingTime);
-            Log.e(TAG, "view:" + view.getX() + ",lastLeavedSlidingTime:" + lastLeavedSlidingTime + ",line:" + line + ",duration:" + currDuration);
-            return currDuration;
+            int fastestSpeed = (width) / lastLeavedSlidingTime;
+            fastestSpeed = Math.min(fastestSpeed, speed + speedWaveValue);
+            if (fastestSpeed <= speed - speedWaveValue) {
+                curSpeed = speed - speedWaveValue;
+            } else
+                curSpeed = speed - speedWaveValue + random.nextInt(fastestSpeed - (speed - speedWaveValue));
+            Log.e(TAG, "view:" + view.getX() + ",lastLeavedSlidingTime:" + lastLeavedSlidingTime + ",line:" + line + ",speed:" + curSpeed);
+            return curSpeed;
         }
     }
 
@@ -454,7 +478,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         return interval;
     }
 
-    private static class BarrageHandler extends Handler{
+    private static class BarrageHandler extends Handler {
         private WeakReference<BarrageView> barrageViewReference;
 
         BarrageHandler(BarrageView barrageView) {

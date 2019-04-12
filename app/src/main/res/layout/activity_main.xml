@@ -4,17 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context="com.borient.tea.arragephotoview.MainActivity">
+    android:orientation="vertical">
 
-    <Button
-        android:id="@+id/btn_add"
-        android:layout_width="match_parent"
-        android:text="添加"
-        android:layout_height="wrap_content" />
-
-    <com.orient.tea.barragephoto.ui.BarrageView
-        android:id="@+id/barrage"
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recycle"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
