@@ -1,4 +1,4 @@
-[![Download](https://api.bintray.com/packages/jiewang19951030/Maven/Muti-Barrage/images/download.svg)](https://bintray.com/jiewang19951030/Maven/Muti-Barrage/_latestVersion)[![](https://img.shields.io/badge/license-Apache2.0-green.svg)](https://opensource.org/licenses/apache2.0.php) 
+[![Download](https://api.bintray.com/packages/jiewang19951030/Maven/Muti-Barrage/images/download.svg)](https://bintray.com/jiewang19951030/Maven/Muti-Barrage/_latestVersion) [![](https://img.shields.io/badge/license-Apache2.0-green.svg)](https://opensource.org/licenses/apache2.0.php) 
 
 # Muti-Barrage
 
@@ -18,7 +18,11 @@
 
 #### 1.  单视图
 
+![单视图弹幕](<https://github.com/mCyp/Muti-Barrage/blob/master/pic/%E5%8D%95%E8%A7%86%E5%9B%BE%E5%BC%B9%E5%B9%95.gif>)
+
 #### 2. 多视图
+
+![多视图弹幕](<https://github.com/mCyp/Muti-Barrage/blob/master/pic/%E5%A4%9A%E8%A7%86%E5%9B%BE%E5%BC%B9%E5%B9%95.gif>)
 
 ## 二、使用方法
 
