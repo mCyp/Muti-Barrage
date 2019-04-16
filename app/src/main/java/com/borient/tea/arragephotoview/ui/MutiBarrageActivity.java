@@ -2,8 +2,8 @@ package com.borient.tea.arragephotoview.ui;
 
 import android.content.Context;
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -11,34 +11,23 @@ import android.widget.Toast;
 
 import com.borient.tea.arragephotoview.R;
 import com.borient.tea.arragephotoview.data.BarrageData;
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.RequestOptions;
 import com.orient.tea.barragephoto.adapter.AdapterListener;
 import com.orient.tea.barragephoto.adapter.BarrageAdapter;
 import com.orient.tea.barragephoto.ui.BarrageView;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
-
+@SuppressWarnings("ALL")
 public class MutiBarrageActivity extends AppCompatActivity {
 
     private String text[] = {"666666666666666", "大盖伦无敌！", "这波操作不亏，50血极限反杀，我们还有机会！"
             , "雷瑟守备钻石守门员求带～", "反向操作！！！！！", "谢谢金克丝送的一发火箭"};
 
-    private String name[] = {"逍遥子送了一架飞机", "王境泽送了一辆UFO", "无敌的VN送了一辆宝马", "快乐的皮皮虾送了一发火箭"};
+    private String name[] = {"逍遥子送了一架飞机", "盐城小王送了一辆UFO", "无敌的VN送了一辆宝马", "快乐的皮皮虾送了一发火箭"};
 
     private final int ICON_RESOURCES[] = {R.drawable.plane, R.drawable.ufo, R.drawable.car
             , R.drawable.rocket};
 
-    private Random random = new Random();
-
     private BarrageView barrageView;
     private BarrageAdapter<BarrageData> mAdapter;
-    //private Button mAdd;
-    private List<BarrageData> barrageDataList = new ArrayList<>();
 
     public static void show(Context context) {
         Intent intent = new Intent(context, MutiBarrageActivity.class);
@@ -50,13 +39,18 @@ public class MutiBarrageActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_muti_barrage);
 
-        //mAdd = findViewById(R.id.btn_add);
         barrageView = findViewById(R.id.barrage);
-        barrageView.setInterval(50);
-        barrageView.setSpeed(200, 20);
-        barrageView.setModel(BarrageView.MODEL_COLLISION_DETECTION);
-        barrageView.setInterceptTouchEvent(true);
-        barrageView.setGravity(BarrageView.GRAVITY_TOP);
+        initBarrage();
+    }
+
+    private void initBarrage(){
+        BarrageView.Options options = new BarrageView.Options()
+                .setGravity(BarrageView.GRAVITY_FULL)                // 设置弹幕的位置
+                .setInterval(50)                                     // 设置弹幕的发送间隔
+                .setModel(BarrageView.MODEL_COLLISION_DETECTION)     // 设置弹幕生成模式
+                .setClick(true);                                     // 设置弹幕是否可以点击
+        barrageView.setOptions(options);
+        // 设置适配器 第一个参数是点击事件的监听器
         barrageView.setAdapter(mAdapter = new BarrageAdapter<BarrageData>(null, this) {
             @Override
             public BarrageViewHolder<BarrageData> onCreateViewHolder(View root, int type) {
@@ -82,36 +76,14 @@ public class MutiBarrageActivity extends AppCompatActivity {
                 }
             }
         });
+        // 设置监听器
         mAdapter.setAdapterListener(new AdapterListener<BarrageData>() {
             @Override
             public void onItemClick(BarrageAdapter.BarrageViewHolder<BarrageData> holder, BarrageData item) {
                 Toast.makeText(MutiBarrageActivity.this, item.getContent() + "点击了一次", Toast.LENGTH_SHORT).show();
             }
         });
-
-        /*mAdd.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                initData();
-            }
-        });*/
     }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        /*TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
-                initData();
-            }
-        };
-        Timer timer = new Timer();
-        timer.schedule(task, 1000);*/
-
-    }
-
 
     @Override
     public void onWindowFocusChanged(boolean hasWindowFocus) {

@@ -26,13 +26,10 @@ import java.util.TimerTask;
 public class SingleBarrageActivity extends AppCompatActivity {
 
     private String SEED[] = {"景色还不错啊", "小姐姐真好看！，", "又去哪里玩了？我也要去！", "门票多少啊？", "厉害啦！"};
-    private Random random = new Random();
     private final int ICON_RESOURCES[] = {R.drawable.cat, R.drawable.corgi, R.drawable.lovelycat, R.drawable.boy, R.drawable.girl,R.drawable.samoyed};
 
     private BarrageView barrageView;
     private BarrageAdapter<BarrageData> mAdapter;
-    //private Button mAdd;
-    private List<BarrageData> barrageDataList = new ArrayList<>();
 
     public static void show(Context context){
         Intent intent = new Intent(context,SingleBarrageActivity.class);
@@ -44,13 +41,20 @@ public class SingleBarrageActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_single_barrage);
 
-        //mAdd = findViewById(R.id.btn_add);
         barrageView = findViewById(R.id.barrage);
-        barrageView.setInterval(50);
-        barrageView.setSpeed(200, 20);
-        barrageView.setModel(BarrageView.MODEL_COLLISION_DETECTION);
-        barrageView.setInterceptTouchEvent(true
-        );
+
+        initBarrage();
+    }
+
+    private void initBarrage(){
+        BarrageView.Options options = new BarrageView.Options()
+                .setGravity(BarrageView.GRAVITY_TOP)                // 设置弹幕的位置
+                .setInterval(50)                                     // 设置弹幕的发送间隔
+                .setSpeed(200,29)                   // 设置速度和波动值
+                .setModel(BarrageView.MODEL_COLLISION_DETECTION)     // 设置弹幕生成模式
+                .setClick(false);                                    // 设置弹幕是否可以点击
+        barrageView.setOptions(options);
+        // 设置适配器 第一个参数是点击事件的监听器
         barrageView.setAdapter(mAdapter = new BarrageAdapter<BarrageData>(null, this) {
             @Override
             public BarrageViewHolder<BarrageData> onCreateViewHolder(View root, int type) {
@@ -62,19 +66,6 @@ public class SingleBarrageActivity extends AppCompatActivity {
                 return R.layout.barrage_item_normal;
             }
         });
-        mAdapter.setAdapterListener(new AdapterListener<BarrageData>() {
-            @Override
-            public void onItemClick(BarrageAdapter.BarrageViewHolder<BarrageData> holder, BarrageData item) {
-                Toast.makeText(SingleBarrageActivity.this,item.getContent()+"点击了一次",Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        /*mAdd.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                initData();
-            }
-        });*/
     }
 
     @Override

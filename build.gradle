@@ -41,12 +41,12 @@ ext {
     //publishedGroupId:artifact:libraryVersion 构成你开源库的唯一路径
     //例如：com.dasu.tv:tv:0.0.1，在build.gradle里就可以根据这个路径来compile依赖库了
     //以下三项均是必配项
-    publishedGroupId = 'com.joeWang'
+    publishedGroupId = 'com.jieWang'
     artifact = 'Muti-Barrage'
-    libraryVersion = '1.0.2'
+    libraryVersion = '1.0.3'
 
     //开源库对应的 github 地址，不知道可不可以不配，应该也是必配
-    gitUrl = 'https://github.com/mCyp/BarragePhoto.git'
+    gitUrl = 'https://github.com/mCyp/Muti-Barrage.git'
 
     //以下三项只是对开源库的描述（应该不是必配项吧，没尝试过）
     libraryName = 'Muti-Barrage'

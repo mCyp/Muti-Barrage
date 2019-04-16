@@ -29,5 +29,5 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation 'jp.wasabeef:glide-transformations:4.0.1'
     //api 'com.github.bumptech.glide:glide:3.7.0'
-    api project(':barragephoto')
+    api project(':Muti-Barrage')
 }

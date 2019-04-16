@@ -12,10 +12,12 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
         <activity android:name=".ui.MutiBarrageActivity"
+            android:screenOrientation="landscape"
             android:theme="@style/ActivityTheme"/>
         <activity
             android:name=".ui.SingleBarrageActivity"
-            android:theme="@style/ActivityTheme" />
+            android:theme="@style/ActivityTheme"
+            />
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
