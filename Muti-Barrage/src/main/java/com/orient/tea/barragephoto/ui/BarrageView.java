@@ -71,6 +71,9 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     // 每一行的速度的储存
     private int[] speedArray;
 
+    // 是否设置当前动画
+    private boolean cancel = false;
+
     // 当前的gravity
     private int gravity = GRAVITY_TOP;
     // 行数
@@ -247,7 +250,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
             initBarrageListAndSpeedArray();
         }
         // 生成动画
-        ValueAnimator valueAnimator = ValueAnimator.ofInt(width, -itemWidth);
+        final ValueAnimator valueAnimator = ValueAnimator.ofInt(width, -itemWidth);
 
         // 获取最佳的行数
         final int line = getBestLine(itemHeight);
@@ -261,6 +264,10 @@ public class BarrageView extends ViewGroup implements IBarrageView {
             public void onAnimationUpdate(ValueAnimator animation) {
                 int value = (int) animation.getAnimatedValue();
                 //Log.e(TAG, "value:" + value);
+                if(cancel){
+                    valueAnimator.cancel();
+                    BarrageView.this.removeView(view);
+                }
                 view.layout(value, line * (singleLineHeight + barrageDistance) + barrageDistance / 2, value + itemWidth, line * (singleLineHeight + barrageDistance) + barrageDistance / 2 + itemHeight);
             }
         });
@@ -402,6 +409,8 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     }
 
     public void destroy() {
+        // 停止动画
+        cancel = true;
         // 清除消息队列，防止内存泄漏
         mHandler.removeCallbacksAndMessages(null);
         mAdapter.destroy();

@@ -15,6 +15,9 @@ import com.orient.tea.barragephoto.adapter.AdapterListener;
 import com.orient.tea.barragephoto.adapter.BarrageAdapter;
 import com.orient.tea.barragephoto.ui.BarrageView;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 @SuppressWarnings("ALL")
 public class MutiBarrageActivity extends AppCompatActivity {
 
