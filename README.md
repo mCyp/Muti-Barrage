@@ -72,7 +72,8 @@
 ```java
 public class BarrageData implements DataSource {
 		...
-		@Override
+		
+    @Override
     public int getType() {
         return type;
     }
@@ -97,9 +98,9 @@ BarrageView.Options options = new BarrageView.Options()
                 .setGravity(BarrageView.GRAVITY_TOP) // 设置弹幕的位置
                 .setInterval(50)  // 设置弹幕的发送间隔
                 .setSpeed(200,29) // 设置速度和波动值
-  							.setRepeat(-1) // 循环播放 默认为1次 -1 为无限循环
-                .setModel(BarrageView.MODEL_COLLISION_DETECTION)// 设置弹幕模式 随机生成or碰撞检测
-                .setClick(false); // 设置弹幕是否可以点击
+                .setModel(BarrageView.MODEL_COLLISION_DETECTION)     // 设置弹幕生成模式
+                .setRepeat(-1)// 循环播放 默认为1次 -1 为无限循环
+                .setClick(false);// 设置弹幕是否可以点击  
 barrageView.setOptions(options);
 ```
 
