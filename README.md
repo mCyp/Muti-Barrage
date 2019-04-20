@@ -9,6 +9,7 @@
 - [x] 碰撞检测（多视图情况下还存在问题）
 - [x] 触摸事件处理
 - [x] 支持全屏和上中下显示
+- [x] 支持设置播放次数和循环播放
 
 ## 一、效果
 
@@ -23,6 +24,8 @@
 #### 2. 多视图
 
 ![多视图弹幕](<https://github.com/mCyp/Muti-Barrage/blob/master/pic/%E5%A4%9A%E8%A7%86%E5%9B%BE%E5%BC%B9%E5%B9%95.gif>)
+
+如果觉得还不错，可以Star一下，如果发现了什么问题，欢迎提交issues～
 
 ## 二、使用方法
 
@@ -91,11 +94,12 @@ private BarrageView barrageView;
   
 barrageView = findViewById(xxx);
 BarrageView.Options options = new BarrageView.Options()
-                .setGravity(BarrageView.GRAVITY_TOP)                // 设置弹幕的位置
-                .setInterval(50)                                     // 设置弹幕的发送间隔
-                .setSpeed(200,29)                   // 设置速度和波动值
-                .setModel(BarrageView.MODEL_COLLISION_DETECTION)     // 设置弹幕模式 随机生成or碰撞检测
-                .setClick(false);                                    // 设置弹幕是否可以点击
+                .setGravity(BarrageView.GRAVITY_TOP) // 设置弹幕的位置
+                .setInterval(50)  // 设置弹幕的发送间隔
+                .setSpeed(200,29) // 设置速度和波动值
+  							.setRepeat(-1) // 循环播放 默认为1次 -1 为无限循环
+                .setModel(BarrageView.MODEL_COLLISION_DETECTION)// 设置弹幕模式 随机生成or碰撞检测
+                .setClick(false); // 设置弹幕是否可以点击
 barrageView.setOptions(options);
 ```
 
