@@ -7,9 +7,11 @@ import android.os.Message;
 import android.support.annotation.LayoutRes;
 import android.view.LayoutInflater;
 import android.view.View;
+
 import com.orient.tea.barragephoto.R;
 import com.orient.tea.barragephoto.model.DataSource;
 import com.orient.tea.barragephoto.ui.IBarrageView;
+
 import java.lang.ref.WeakReference;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -17,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 基础的适配器
@@ -42,6 +45,10 @@ public abstract class BarrageAdapter<T extends DataSource>
     private Context mContext;
     // 默认的间隔
     private long interval;
+    // 循环的次数
+    private int repeat;
+    // 当前的
+    private AtomicBoolean isDestroy = new AtomicBoolean(false);
 
     // 单线程的消息对立
     private ExecutorService mService = Executors.newSingleThreadExecutor();
@@ -84,6 +91,7 @@ public abstract class BarrageAdapter<T extends DataSource>
     public void setBarrageView(IBarrageView barrageView) {
         this.barrageView = barrageView;
         this.interval = barrageView.getInterval();
+        this.repeat = barrageView.getRepeat();
     }
 
     // TODO 数据的增加处理
@@ -141,7 +149,8 @@ public abstract class BarrageAdapter<T extends DataSource>
      *
      * @return xml文件
      */
-    public abstract @LayoutRes int getItemLayout(T t);
+    public abstract @LayoutRes
+    int getItemLayout(T t);
 
     /**
      * 绑定数据
@@ -195,7 +204,12 @@ public abstract class BarrageAdapter<T extends DataSource>
     }
 
     public void destroy() {
-        mService.shutdownNow();
+        while (!isDestroy.get())
+            isDestroy.compareAndSet(false, true);
+        // 数据清空
+        mDataList.clear();
+        if (!mService.isShutdown())
+            mService.shutdownNow();
         mHandler.removeCallbacksAndMessages(null);
         barrageView = null;
     }
@@ -233,13 +247,28 @@ public abstract class BarrageAdapter<T extends DataSource>
 
         @Override
         public void run() {
-            for (int i = 0; i < len; i++) {
-                mHandler.sendEmptyMessage(MSG_CREATE_VIEW);
-                try {
-                    Thread.sleep(interval * 20);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            if (repeat != -1 && repeat > 0) {
+                for (int j = 0; j < repeat; j++) {
+                    sendMsg(len);
                 }
+            } else if (repeat == -1) {
+                while (!isDestroy.get()) {
+                    sendMsg(len);
+                }
+            }
+        }
+    }
+
+    private void sendMsg(int len) {
+        for (int i = 0; i < len; i++) {
+            Message msg = new Message();
+            msg.what = MSG_CREATE_VIEW;
+            msg.obj = i;
+            mHandler.sendMessage(msg);
+            try {
+                Thread.sleep(interval * 20);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -249,7 +278,7 @@ public abstract class BarrageAdapter<T extends DataSource>
 
         public BarrageAdapterHandler(Looper looper, BarrageAdapter adapter) {
             super(looper);
-            adapterReference = new WeakReference<BarrageAdapter>(adapter);
+            adapterReference = new WeakReference<>(adapter);
         }
 
         @Override
@@ -258,7 +287,8 @@ public abstract class BarrageAdapter<T extends DataSource>
 
             switch (msg.what) {
                 case MSG_CREATE_VIEW: {
-                    T data = (T) adapterReference.get().mDataList.remove();
+                    int pos = (int) msg.obj;
+                    T data = (T) adapterReference.get().mDataList.get(pos);
                     if (data == null)
                         break;
                     if (adapterReference.get().barrageView == null)

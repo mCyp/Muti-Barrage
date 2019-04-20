@@ -17,5 +17,7 @@ public interface IBarrageView {
     View getCacheView(int type);
     // 发送View间隔 默认为0
     long getInterval();
+    // 循环的次数
+    int getRepeat();
 
 }

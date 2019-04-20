@@ -18,6 +18,7 @@ import com.orient.tea.barragephoto.adapter.BarrageAdapter;
 import com.orient.tea.barragephoto.ui.BarrageView;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Timer;
@@ -52,6 +53,7 @@ public class SingleBarrageActivity extends AppCompatActivity {
                 .setInterval(50)                                     // 设置弹幕的发送间隔
                 .setSpeed(200,29)                   // 设置速度和波动值
                 .setModel(BarrageView.MODEL_COLLISION_DETECTION)     // 设置弹幕生成模式
+                .setRepeat(-1)                                       // 循环播放 默认为1次 -1 为无限循环
                 .setClick(false);                                    // 设置弹幕是否可以点击
         barrageView.setOptions(options);
         // 设置适配器 第一个参数是点击事件的监听器
@@ -77,9 +79,11 @@ public class SingleBarrageActivity extends AppCompatActivity {
 
     private void initData() {
         int strLength = SEED.length;
-        for (int i = 0; i < 50; i++) {
-            mAdapter.add(new BarrageData(SEED[i%strLength], 0,i));
+        List<BarrageData> dataList = new LinkedList<>();
+        for (int i = 0; i < 5; i++) {
+            dataList.add(new BarrageData(SEED[i%strLength], 0,i));
         }
+        mAdapter.addList(dataList);
     }
 
     @Override

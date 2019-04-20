@@ -78,6 +78,8 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     private int gravity = GRAVITY_TOP;
     // 行数
     private int barrageLines;
+    // 重复次数
+    private int repeat;
     // 宽度和高度
     private int width, height;
     private List<View> barrageList;
@@ -138,6 +140,10 @@ public class BarrageView extends ViewGroup implements IBarrageView {
 
             if(options.config.model != 0){
                 this.model = options.config.model;
+            }
+
+            if(options.config.repeat != 0){
+                this.repeat = options.config.repeat;
             }
 
             this.isInterceptTouchEvent = options.config.isInterceptTouchEvent;
@@ -443,6 +449,11 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         return interval;
     }
 
+    @Override
+    public int getRepeat() {
+        return repeat;
+    }
+
     private static class BarrageHandler extends Handler {
         private WeakReference<BarrageView> barrageViewReference;
 
@@ -475,6 +486,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         int waveSpeed;
         int model;
         boolean isInterceptTouchEvent = true;
+        int repeat = 1;
     }
 
     public static class Options{
@@ -528,6 +540,16 @@ public class BarrageView extends ViewGroup implements IBarrageView {
          */
         public Options setModel(int model) {
             this.config.model = model;
+            return this;
+        }
+
+        /**
+         * 循环次数 默认为1次 可以无限循环
+         *
+         * @param repeat 模式类型
+         */
+        public Options setRepeat(int repeat) {
+            this.config.repeat = repeat;
             return this;
         }
 
