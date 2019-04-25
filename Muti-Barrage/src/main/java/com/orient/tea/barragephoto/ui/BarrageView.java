@@ -59,7 +59,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
 
     private BarrageHandler mHandler;
     // 记录放入缓存的View
-    public volatile int count = 0;
+    public int count = 0;
     // 发送间隔
     public long interval;
     // 模式
@@ -301,9 +301,11 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     }
 
     /**
-     * 获取弹幕从屏幕开始到结束所花时间
+     * 获取速度
      *
-     * @return 弹幕时间
+     * @param line 最佳弹道
+     * @param itemWidth 子View的宽度
+     * @return 速度
      */
     private int getSpeed(int line, int itemWidth) {
         if (model == MODEL_RANDOM) {

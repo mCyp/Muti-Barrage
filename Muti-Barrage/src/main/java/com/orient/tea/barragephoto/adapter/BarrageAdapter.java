@@ -27,12 +27,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Created by wangjie on 2019/3/7.
  */
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked"})
 public abstract class BarrageAdapter<T extends DataSource>
         implements View.OnClickListener {
 
     private static final int MSG_CREATE_VIEW = 1;
-    private static final String TAG = "BarrageAdapter";
 
     // View的点击监听
     private AdapterListener<T> mAdapterListener;
@@ -54,28 +53,9 @@ public abstract class BarrageAdapter<T extends DataSource>
     private ExecutorService mService = Executors.newSingleThreadExecutor();
     // 主线程的Handler
     private BarrageAdapterHandler<T> mHandler = new BarrageAdapterHandler<>(Looper.getMainLooper(), this);
-    /*private Handler mHandler = new Handler(Looper.getMainLooper()){
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-
-            switch (msg.what){
-                case MSG_CREATE_VIEW:{
-                    T data = mDataList.remove();
-                    if(data == null)
-                        break;
-                    if(barrageView == null)
-                        throw new RuntimeException("please set barrageView,barrageView can't be null");
-                    // get from cache
-                    View cacheView = barrageView.getCacheView(data.getType());
-                    createItemView(data,cacheView);
-                }
-            }
-
-        }
-    };*/
 
 
+    @SuppressWarnings("WeakerAccess")
     public BarrageAdapter(AdapterListener<T> adapterListener, Context context) {
         this.mAdapterListener = adapterListener;
         this.mTypeList = new HashSet<>();
@@ -101,7 +81,7 @@ public abstract class BarrageAdapter<T extends DataSource>
      *
      * @param cacheView 缓存视图
      */
-    public void createItemView(T data, View cacheView) {
+    private void createItemView(T data, View cacheView) {
         // 1.获取子布局
         // 2. 创建ViewHolder
         // 3. 绑定ViewHolder
@@ -130,7 +110,7 @@ public abstract class BarrageAdapter<T extends DataSource>
         View root = LayoutInflater.from(context).inflate(type, null);
         BarrageViewHolder<T> holder = onCreateViewHolder(root, type);
 
-        // 设置点击时间
+        // 设置点击事件
         root.setTag(R.id.barrage_view_holder, holder);
         root.setOnClickListener(this);
         return holder;
@@ -158,7 +138,7 @@ public abstract class BarrageAdapter<T extends DataSource>
      * @param holder BarrageViewHolder
      * @param data   T
      */
-    protected void bindViewHolder(BarrageViewHolder<T> holder, T data) {
+    private void bindViewHolder(BarrageViewHolder<T> holder, T data) {
         if (null == data)
             return;
         holder.bind(data);
@@ -222,7 +202,7 @@ public abstract class BarrageAdapter<T extends DataSource>
             this.itemView = itemView;
         }
 
-        public View getItemView() {
+        View getItemView() {
             return itemView;
         }
 
@@ -241,7 +221,7 @@ public abstract class BarrageAdapter<T extends DataSource>
 
         private int len;
 
-        public DelayRunnable(int len) {
+        DelayRunnable(int len) {
             this.len = len;
         }
 
@@ -276,7 +256,7 @@ public abstract class BarrageAdapter<T extends DataSource>
     public static class BarrageAdapterHandler<T extends DataSource> extends Handler {
         private WeakReference<BarrageAdapter> adapterReference;
 
-        public BarrageAdapterHandler(Looper looper, BarrageAdapter adapter) {
+        BarrageAdapterHandler(Looper looper, BarrageAdapter adapter) {
             super(looper);
             adapterReference = new WeakReference<>(adapter);
         }

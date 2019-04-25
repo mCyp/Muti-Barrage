@@ -8,6 +8,7 @@ import com.orient.tea.barragephoto.model.DataSource;
  * Created by wangjie on 2019/3/22.
  */
 
+@SuppressWarnings("ALL")
 public class BarrageData implements DataSource {
 
     private String content;
@@ -43,11 +44,5 @@ public class BarrageData implements DataSource {
     @Override
     public int getType() {
         return type;
-    }
-
-    // 是不是不需要 考虑删除
-    @Override
-    public long getShowTime() {
-        return 0;
     }
 }
