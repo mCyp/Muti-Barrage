@@ -100,10 +100,11 @@ public class MutiBarrageActivity extends AppCompatActivity {
         int strLength = text.length;
         for (int i = 0; i < 50; i++) {
             if (i == 0 || i % 9 != 0)
-                if (i % 4 != 0)
+                if (i % 4 != 0) {
                     mAdapter.add(new BarrageData(text[i % 6], 0, i));
-                else
+                } else {
                     mAdapter.add(new BarrageData(text[i % 6], 1, i));
+                }
             else
                 mAdapter.add(new BarrageData(name[i % name.length], 2, i));
         }

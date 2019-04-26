@@ -41,6 +41,7 @@ public abstract class BarrageAdapter<T extends DataSource>
     private IBarrageView barrageView;
     // 当前的数据
     private LinkedList<T> mDataList;
+
     private Context mContext;
     // 默认的间隔
     private long interval;
@@ -241,10 +242,7 @@ public abstract class BarrageAdapter<T extends DataSource>
 
     private void sendMsg(int len) {
         for (int i = 0; i < len; i++) {
-            Message msg = new Message();
-            msg.what = MSG_CREATE_VIEW;
-            msg.obj = i;
-            mHandler.sendMessage(msg);
+            mHandler.sendEmptyMessage(MSG_CREATE_VIEW);
             try {
                 Thread.sleep(interval * 20);
             } catch (InterruptedException e) {
@@ -267,8 +265,7 @@ public abstract class BarrageAdapter<T extends DataSource>
 
             switch (msg.what) {
                 case MSG_CREATE_VIEW: {
-                    int pos = (int) msg.obj;
-                    T data = (T) adapterReference.get().mDataList.get(pos);
+                    T data = (T) adapterReference.get().mDataList.remove();
                     if (data == null)
                         break;
                     if (adapterReference.get().barrageView == null)
@@ -276,6 +273,8 @@ public abstract class BarrageAdapter<T extends DataSource>
                     // get from cache
                     View cacheView = adapterReference.get().barrageView.getCacheView(data.getType());
                     adapterReference.get().createItemView(data, cacheView);
+                    if (adapterReference.get().repeat != 1)
+                        adapterReference.get().mDataList.addLast(data);
                 }
             }
 

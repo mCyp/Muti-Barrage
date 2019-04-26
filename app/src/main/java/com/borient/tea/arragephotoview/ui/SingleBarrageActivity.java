@@ -20,7 +20,7 @@ import java.util.List;
 
 public class SingleBarrageActivity extends AppCompatActivity {
 
-    private String SEED[] = {"景色还不错啊", "小姐姐真好看！来合影哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈阿哈哈哈哈哈～，", "又去哪里玩了？我也要去！带我去，带我去～", "门票多少啊？", "厉害啦！"};
+    private String SEED[] = {"景色还不错啊", "小姐姐真好看～，", "又去哪里玩了？我也要去！带我去～", "门票多少啊？", "厉害啦！"};
     private final int ICON_RESOURCES[] = {R.drawable.cat, R.drawable.corgi, R.drawable.lovelycat, R.drawable.boy, R.drawable.girl,R.drawable.samoyed};
 
     private BarrageView barrageView;
