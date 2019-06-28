@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -26,6 +27,8 @@ public class SingleBarrageActivity extends AppCompatActivity {
     private BarrageView barrageView;
     private BarrageAdapter<BarrageData> mAdapter;
 
+    //private Button btnStop;
+
     public static void show(Context context){
         Intent intent = new Intent(context,SingleBarrageActivity.class);
         context.startActivity(intent);
@@ -37,8 +40,23 @@ public class SingleBarrageActivity extends AppCompatActivity {
         setContentView(R.layout.activity_single_barrage);
 
         barrageView = findViewById(R.id.barrage);
+        //btnStop = findViewById(R.id.btn_add);
 
         initBarrage();
+
+        /*btnStop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                barrageView.destroy();
+            }
+        });*/
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
     }
 
     private void initBarrage(){
@@ -63,6 +81,8 @@ public class SingleBarrageActivity extends AppCompatActivity {
             }
         });
     }
+
+
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {

@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * 弹幕视图
@@ -52,7 +53,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     public final static int GRAVITY_BOTTOM = 4;
     public final static int GRAVITY_FULL = 7;
     // 设置最大的缓存View的数量 当达到200的时候回收View
-    public final static int MAX_COUNT = 200;
+    public final static int MAX_COUNT = 500;
     // 速度和波动速度的默认值
     public final static int DEFAULT_SPEED = 200;
     public final static int DEFAULT_WAVE_SPEED = 20;
@@ -93,6 +94,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     // View的缓存
     private SparseArray<LinkedList<View>> mArray;
     private Random random = new Random();
+    private CountDownLatch countDownLatch = new CountDownLatch(1);
 
 
     public BarrageView(Context context) {
@@ -110,6 +112,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         this.barrageList = new ArrayList<>();
         this.mArray = new SparseArray<>();
         mHandler = new BarrageHandler(this);
+
     }
 
     /**
@@ -210,12 +213,13 @@ public class BarrageView extends ViewGroup implements IBarrageView {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
+        measureChildren(widthMeasureSpec, heightMeasureSpec);
+
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
         this.width = width;
         this.height = height;
-
-        //measureChildren(widthMeasureSpec, heightMeasureSpec);
+        //countDownLatch.countDown();
     }
 
     /**
@@ -223,6 +227,11 @@ public class BarrageView extends ViewGroup implements IBarrageView {
      */
     private void initBarrageListAndSpeedArray() {
         barrageDistance = DeviceUtils.dp2px(getContext(), 12);
+        /*try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }*/
         barrageLines = height / (singleLineHeight + barrageDistance);
         for (int i = 0; i < barrageLines; i++) {
             barrageList.add(i, null);

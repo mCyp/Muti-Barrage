@@ -8,7 +8,7 @@
     <!--<Button
         android:id="@+id/btn_add"
         android:layout_width="match_parent"
-        android:text="添加"
+        android:text="暂停"
         android:layout_height="wrap_content" />-->
 
     <ImageView

@@ -192,6 +192,7 @@ public abstract class BarrageAdapter<T extends DataSource>
         if (!mService.isShutdown())
             mService.shutdownNow();
         mHandler.removeCallbacksAndMessages(null);
+        mHandler = null;
         barrageView = null;
     }
 
