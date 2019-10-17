@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 基础的适配器
- * <p>
  * Created by wangjie on 2019/3/7.
  */
 

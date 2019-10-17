@@ -7,7 +7,6 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,7 +17,6 @@ import com.orient.tea.barragephoto.R;
 import com.orient.tea.barragephoto.adapter.BarrageAdapter;
 import com.orient.tea.barragephoto.listener.SimpleAnimationListener;
 import com.orient.tea.barragephoto.model.DataSource;
-import com.orient.tea.barragephoto.utils.DeviceUtils;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -271,19 +269,24 @@ public class BarrageView extends ViewGroup implements IBarrageView {
         final int line = getBestLine(itemHeight);
         int curSpeed = getSpeed(line, itemWidth);
         long duration = (int)((float)(width+itemWidth)/(float)curSpeed+1) * 1000;
-        Log.i(TAG,"duration:"+duration);
+        //Log.i(TAG,"duration:"+duration);
         valueAnimator.setDuration(duration);
         valueAnimator.setInterpolator(new LinearInterpolator());
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
-                int value = (int) animation.getAnimatedValue();
+                float value =  animation.getAnimatedFraction();
+                //animation.getAnimatedValue()
                 //Log.e(TAG, "value:" + value);
                 if(cancel){
                     valueAnimator.cancel();
                     BarrageView.this.removeView(view);
                 }
-                view.layout(value, line * (singleLineHeight + barrageDistance) + barrageDistance / 2, value + itemWidth, line * (singleLineHeight + barrageDistance) + barrageDistance / 2 + itemHeight);
+                //view.layout(value, line * (singleLineHeight + barrageDistance) + barrageDistance / 2, value + itemWidth, line * (singleLineHeight + barrageDistance) + barrageDistance / 2 + itemHeight);
+                view.layout((int) (width - (width + itemWidth) * value)
+                        , line * (singleLineHeight + barrageDistance) + barrageDistance / 2
+                        , (int) (width - (width + itemWidth) * value) + itemWidth
+                        , line * (singleLineHeight + barrageDistance) + barrageDistance / 2 + itemHeight);
             }
         });
         valueAnimator.addListener(new SimpleAnimationListener() {
@@ -325,14 +328,14 @@ public class BarrageView extends ViewGroup implements IBarrageView {
             int curSpeed;
             if (view == null) {
                 curSpeed = speed - speedWaveValue + random.nextInt(2 * speedWaveValue);
-                Log.e(TAG, "View:null" + ",line:" + line + ",speed:" + curSpeed);
+                //Log.e(TAG, "View:null" + ",line:" + line + ",speed:" + curSpeed);
                 // 如果当前为空 随机生成一个滑动时间
                 return curSpeed;
             }
             int slideLength = (int) (width - view.getX());
             if (view.getWidth() > slideLength) {
                 // 数据密集的时候跟上面的时间间隔相同
-                Log.e(TAG, "View:------" + ",line:" + line + ",speed:" + lastSpeed);
+                //Log.e(TAG, "View:------" + ",line:" + line + ",speed:" + lastSpeed);
                 return lastSpeed;
             }
             // 得到上个View剩下的滑动时间
@@ -344,7 +347,7 @@ public class BarrageView extends ViewGroup implements IBarrageView {
                 curSpeed = speed - speedWaveValue;
             } else
                 curSpeed = speed - speedWaveValue + random.nextInt(fastestSpeed - (speed - speedWaveValue));
-            Log.e(TAG, "view:" + view.getX() + ",lastLeavedSlidingTime:" + lastLeavedSlidingTime + ",line:" + line + ",speed:" + curSpeed);
+            //Log.e(TAG, "view:" + view.getX() + ",lastLeavedSlidingTime:" + lastLeavedSlidingTime + ",line:" + line + ",speed:" + curSpeed);
             return curSpeed;
         }
     }

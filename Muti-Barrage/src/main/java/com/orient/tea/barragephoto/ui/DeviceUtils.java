@@ -1,4 +1,4 @@
-package com.orient.tea.barragephoto.utils;
+package com.orient.tea.barragephoto.ui;
 
 import android.content.Context;
 
@@ -7,15 +7,14 @@ import android.content.Context;
  *
  * Created by wangjie on 2019/3/16.
  */
-
-public class DeviceUtils {
-    public static int dp2px(Context context, float dpValue) {
+ class DeviceUtils {
+     static int dp2px(Context context, float dpValue) {
         float scale = context.getResources().getDisplayMetrics().density;
         return (int) (dpValue * scale + 0.5f);
     }
 
     @SuppressWarnings("unused")
-    public static int sp2px(Context context, float spValue) {
+    static int sp2px(Context context, float spValue) {
         float fontScale = context.getResources().getDisplayMetrics().scaledDensity;
         return (int) (spValue * fontScale + 0.5f);
     }
