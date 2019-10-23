@@ -43,7 +43,7 @@ ext {
     //以下三项均是必配项
     publishedGroupId = 'com.jieWang'
     artifact = 'Muti-Barrage'
-    libraryVersion = '1.0.7'
+    libraryVersion = '1.0.8'
 
     //开源库对应的 github 地址，不知道可不可以不配，应该也是必配
     gitUrl = 'https://github.com/mCyp/Muti-Barrage.git'
